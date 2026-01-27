@@ -24,24 +24,35 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
 
-  const handleDelete = useCallback(async (photoName: string) => {
+  const deletePhoto = useCallback(async (photoName: string) => {
     if (!user || !storage) return;
-
-    const confirmed = window.confirm('Are you sure you want to delete this photo?');
-    if (!confirmed) return;
 
     setDeletingPhoto(photoName);
     try {
       const photoRef = ref(storage, `photos/${user.uid}/${photoName}`);
       await deleteObject(photoRef);
-      setPhotos((prev) => prev.filter((p) => p.name !== photoName));
+      setPhotos((prev) => {
+        const newPhotos = prev.filter((p) => p.name !== photoName);
+        // Adjust lightbox index if needed
+        if (lightboxIndex !== null && lightboxIndex >= newPhotos.length) {
+          setLightboxIndex(newPhotos.length > 0 ? newPhotos.length - 1 : null);
+        }
+        return newPhotos;
+      });
     } catch (err) {
       console.error('Error deleting photo:', err);
       alert('Failed to delete photo. Please try again.');
+      throw err;
     } finally {
       setDeletingPhoto(null);
     }
-  }, [user]);
+  }, [user, lightboxIndex]);
+
+  const handleDelete = useCallback(async (photoName: string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this photo?');
+    if (!confirmed) return;
+    await deletePhoto(photoName);
+  }, [deletePhoto]);
 
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
@@ -182,6 +193,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           onClose={closeLightbox}
           onPrev={prevPhoto}
           onNext={nextPhoto}
+          onDelete={deletePhoto}
         />
       )}
     </>
