@@ -7,6 +7,7 @@ interface Photo {
   url: string;
   name: string;
   caption: string;
+  favorite: boolean;
 }
 
 interface PhotoLightboxProps {
@@ -17,6 +18,7 @@ interface PhotoLightboxProps {
   onNext: () => void;
   onDelete?: (photoName: string) => Promise<void>;
   onUpdateCaption?: (photoName: string, caption: string) => Promise<void>;
+  onToggleFavorite?: (photoName: string) => Promise<void>;
 }
 
 export function PhotoLightbox({
@@ -27,6 +29,7 @@ export function PhotoLightbox({
   onNext,
   onDelete,
   onUpdateCaption,
+  onToggleFavorite,
 }: PhotoLightboxProps) {
   const photo = photos[currentIndex];
   const [isDeleting, setIsDeleting] = useState(false);
@@ -263,6 +266,25 @@ export function PhotoLightbox({
 
       {/* Bottom toolbar */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
+        {/* Favorite button */}
+        {onToggleFavorite && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite(photo.name);
+            }}
+            className={`p-2 rounded-full hover:bg-white/10 transition-colors ${
+              photo.favorite ? 'text-red-500' : 'text-white/80 hover:text-red-500'
+            }`}
+            aria-label={photo.favorite ? 'Remove from favorites' : 'Add to favorites'}
+            title={photo.favorite ? 'Remove from favorites' : 'Add to favorites'}
+          >
+            <svg className="w-6 h-6" fill={photo.favorite ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+        )}
+
         {/* Download button */}
         <button
           onClick={(e) => {

@@ -12,6 +12,7 @@ interface Photo {
   url: string;
   name: string;
   caption: string;
+  favorite: boolean;
 }
 
 interface PhotoGalleryProps {
@@ -25,6 +26,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
   const [error, setError] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const deletePhoto = useCallback(async (photoName: string) => {
     if (!user || !storage) return;
@@ -88,16 +90,52 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
     }
   }, [user]);
 
+  const toggleFavorite = useCallback(async (photoName: string) => {
+    if (!user || !db) return;
+
+    const photo = photos.find((p) => p.name === photoName);
+    if (!photo) return;
+
+    const newFavorite = !photo.favorite;
+
+    try {
+      const docRef = doc(db, 'photos', `${user.uid}_${photoName}`);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        await setDoc(docRef, { ...docSnap.data(), favorite: newFavorite }, { merge: true });
+      } else {
+        await setDoc(docRef, {
+          userId: user.uid,
+          fileName: photoName,
+          caption: '',
+          favorite: newFavorite,
+          uploadedAt: parseInt(photoName.split('_')[0]) || Date.now(),
+        });
+      }
+
+      setPhotos((prev) =>
+        prev.map((p) => (p.name === photoName ? { ...p, favorite: newFavorite } : p))
+      );
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+      throw err;
+    }
+  }, [user, photos]);
+
   const handleDelete = useCallback(async (photoName: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this photo?');
     if (!confirmed) return;
     await deletePhoto(photoName);
   }, [deletePhoto]);
 
+  const displayedPhotos = showFavoritesOnly ? photos.filter((p) => p.favorite) : photos;
+  const favoriteCount = photos.filter((p) => p.favorite).length;
+
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
   const prevPhoto = () => setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
-  const nextPhoto = () => setLightboxIndex((i) => (i !== null && i < photos.length - 1 ? i + 1 : i));
+  const nextPhoto = () => setLightboxIndex((i) => (i !== null && i < displayedPhotos.length - 1 ? i + 1 : i));
 
   useEffect(() => {
     const fetchPhotos = async () => {
@@ -117,21 +155,24 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
         const photoPromises = result.items.map(async (item) => {
           const url = await getDownloadURL(item);
           let caption = '';
+          let favorite = false;
 
-          // Fetch caption from Firestore if available
+          // Fetch metadata from Firestore if available
           if (db) {
             try {
               const docRef = doc(db, 'photos', `${user.uid}_${item.name}`);
               const docSnap = await getDoc(docRef);
               if (docSnap.exists()) {
-                caption = docSnap.data().caption || '';
+                const data = docSnap.data();
+                caption = data.caption || '';
+                favorite = data.favorite || false;
               }
             } catch (err) {
-              console.error('Error fetching caption:', err);
+              console.error('Error fetching photo metadata:', err);
             }
           }
 
-          return { url, name: item.name, caption };
+          return { url, name: item.name, caption, favorite };
         });
 
         const fetchedPhotos = await Promise.all(photoPromises);
@@ -201,8 +242,38 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-        {photos.map((photo, index) => (
+      {/* Filter toggle */}
+      {favoriteCount > 0 && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm transition-colors ${
+              showFavoritesOnly
+                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            <svg className="w-4 h-4" fill={showFavoritesOnly ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            {showFavoritesOnly ? `Favorites (${favoriteCount})` : `Show favorites (${favoriteCount})`}
+          </button>
+        </div>
+      )}
+
+      {showFavoritesOnly && displayedPhotos.length === 0 ? (
+        <div className="text-center py-12">
+          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No favorites yet</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Click the heart icon on photos to add them to favorites.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {displayedPhotos.map((photo, index) => (
           <div
             key={photo.name}
             className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 group"
@@ -215,6 +286,14 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
               onClick={() => openLightbox(index)}
             />
+            {/* Favorite indicator */}
+            {photo.favorite && (
+              <div className="absolute top-2 left-2 p-1 text-red-500">
+                <svg className="w-5 h-5 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                </svg>
+              </div>
+            )}
             {/* Delete button */}
             <button
               onClick={(e) => {
@@ -239,17 +318,19 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           </div>
         ))}
       </div>
+      )}
 
       {/* Lightbox */}
       {lightboxIndex !== null && (
         <PhotoLightbox
-          photos={photos}
+          photos={displayedPhotos}
           currentIndex={lightboxIndex}
           onClose={closeLightbox}
           onPrev={prevPhoto}
           onNext={nextPhoto}
           onDelete={deletePhoto}
           onUpdateCaption={updateCaption}
+          onToggleFavorite={toggleFavorite}
         />
       )}
     </>
