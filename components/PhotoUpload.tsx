@@ -2,7 +2,8 @@
 
 import { useState, useRef, ChangeEvent, DragEvent } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { storage, db } from '@/lib/firebase';
 import { useAuth } from './AuthProvider';
 
 interface UploadingFile {
@@ -70,7 +71,23 @@ export function PhotoUpload({ onUploadComplete }: PhotoUploadProps) {
         );
       },
       async () => {
-        await getDownloadURL(uploadTask.snapshot.ref);
+        const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+        // Save photo metadata to Firestore
+        if (db) {
+          try {
+            await setDoc(doc(db, 'photos', `${user.uid}_${filename}`), {
+              userId: user.uid,
+              fileName: filename,
+              url: downloadUrl,
+              caption: '',
+              uploadedAt: timestamp,
+            });
+          } catch (err) {
+            console.error('Failed to save photo metadata:', err);
+          }
+        }
+
         setUploads((prev) =>
           prev.map((u) =>
             u.id === id ? { ...u, status: 'complete', progress: 100 } : u

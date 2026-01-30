@@ -6,6 +6,7 @@ import Image from 'next/image';
 interface Photo {
   url: string;
   name: string;
+  caption: string;
 }
 
 interface PhotoLightboxProps {
@@ -15,6 +16,7 @@ interface PhotoLightboxProps {
   onPrev: () => void;
   onNext: () => void;
   onDelete?: (photoName: string) => Promise<void>;
+  onUpdateCaption?: (photoName: string, caption: string) => Promise<void>;
 }
 
 export function PhotoLightbox({
@@ -24,9 +26,13 @@ export function PhotoLightbox({
   onPrev,
   onNext,
   onDelete,
+  onUpdateCaption,
 }: PhotoLightboxProps) {
   const photo = photos[currentIndex];
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isEditingCaption, setIsEditingCaption] = useState(false);
+  const [captionText, setCaptionText] = useState(photo?.caption || '');
+  const [isSavingCaption, setIsSavingCaption] = useState(false);
 
   const handleDownload = async () => {
     if (!photo) return;
@@ -102,13 +108,38 @@ export function PhotoLightbox({
     }
   };
 
+  // Sync caption text when photo changes
+  useEffect(() => {
+    setCaptionText(photo?.caption || '');
+    setIsEditingCaption(false);
+  }, [photo]);
+
+  const handleSaveCaption = async () => {
+    if (!photo || !onUpdateCaption) return;
+    setIsSavingCaption(true);
+    try {
+      await onUpdateCaption(photo.name, captionText);
+      setIsEditingCaption(false);
+    } catch (err) {
+      console.error('Failed to save caption:', err);
+    } finally {
+      setIsSavingCaption(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setCaptionText(photo?.caption || '');
+    setIsEditingCaption(false);
+  };
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (isEditingCaption) return; // Don't handle navigation when editing
       if (e.key === 'Escape') onClose();
       if (e.key === 'ArrowLeft') onPrev();
       if (e.key === 'ArrowRight') onNext();
     },
-    [onClose, onPrev, onNext]
+    [onClose, onPrev, onNext, isEditingCaption]
   );
 
   useEffect(() => {
@@ -183,6 +214,51 @@ export function PhotoLightbox({
           sizes="90vw"
           priority
         />
+      </div>
+
+      {/* Caption area */}
+      <div
+        className="absolute bottom-20 left-1/2 -translate-x-1/2 w-full max-w-lg px-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {isEditingCaption ? (
+          <div className="bg-black/70 rounded-lg p-3">
+            <textarea
+              value={captionText}
+              onChange={(e) => setCaptionText(e.target.value)}
+              placeholder="Add a caption..."
+              className="w-full bg-transparent text-white placeholder-white/50 resize-none outline-none text-sm"
+              rows={2}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                onClick={handleCancelEdit}
+                className="px-3 py-1 text-sm text-white/80 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveCaption}
+                disabled={isSavingCaption}
+                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isSavingCaption ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            onClick={() => onUpdateCaption && setIsEditingCaption(true)}
+            className={`text-center ${onUpdateCaption ? 'cursor-pointer hover:bg-black/30 rounded-lg p-2 transition-colors' : ''}`}
+          >
+            {photo.caption ? (
+              <p className="text-white/90 text-sm">{photo.caption}</p>
+            ) : onUpdateCaption ? (
+              <p className="text-white/50 text-sm italic">Click to add caption</p>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Bottom toolbar */}

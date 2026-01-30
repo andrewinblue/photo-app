@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ref, listAll, getDownloadURL, deleteObject } from 'firebase/storage';
-import { storage } from '@/lib/firebase';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { storage, db } from '@/lib/firebase';
 import { useAuth } from './AuthProvider';
 import Image from 'next/image';
 import { PhotoLightbox } from './PhotoLightbox';
@@ -10,6 +11,7 @@ import { PhotoLightbox } from './PhotoLightbox';
 interface Photo {
   url: string;
   name: string;
+  caption: string;
 }
 
 interface PhotoGalleryProps {
@@ -31,6 +33,16 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
     try {
       const photoRef = ref(storage, `photos/${user.uid}/${photoName}`);
       await deleteObject(photoRef);
+
+      // Also delete from Firestore
+      if (db) {
+        try {
+          await deleteDoc(doc(db, 'photos', `${user.uid}_${photoName}`));
+        } catch (err) {
+          console.error('Error deleting photo metadata:', err);
+        }
+      }
+
       setPhotos((prev) => {
         const newPhotos = prev.filter((p) => p.name !== photoName);
         // Adjust lightbox index if needed
@@ -47,6 +59,34 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
       setDeletingPhoto(null);
     }
   }, [user, lightboxIndex]);
+
+  const updateCaption = useCallback(async (photoName: string, caption: string) => {
+    if (!user || !db) return;
+
+    try {
+      const docRef = doc(db, 'photos', `${user.uid}_${photoName}`);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        await setDoc(docRef, { ...docSnap.data(), caption }, { merge: true });
+      } else {
+        // Create doc if it doesn't exist (for older photos without metadata)
+        await setDoc(docRef, {
+          userId: user.uid,
+          fileName: photoName,
+          caption,
+          uploadedAt: parseInt(photoName.split('_')[0]) || Date.now(),
+        });
+      }
+
+      setPhotos((prev) =>
+        prev.map((p) => (p.name === photoName ? { ...p, caption } : p))
+      );
+    } catch (err) {
+      console.error('Error updating caption:', err);
+      throw err;
+    }
+  }, [user]);
 
   const handleDelete = useCallback(async (photoName: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this photo?');
@@ -76,7 +116,22 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
 
         const photoPromises = result.items.map(async (item) => {
           const url = await getDownloadURL(item);
-          return { url, name: item.name };
+          let caption = '';
+
+          // Fetch caption from Firestore if available
+          if (db) {
+            try {
+              const docRef = doc(db, 'photos', `${user.uid}_${item.name}`);
+              const docSnap = await getDoc(docRef);
+              if (docSnap.exists()) {
+                caption = docSnap.data().caption || '';
+              }
+            } catch (err) {
+              console.error('Error fetching caption:', err);
+            }
+          }
+
+          return { url, name: item.name, caption };
         });
 
         const fetchedPhotos = await Promise.all(photoPromises);
@@ -194,6 +249,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           onPrev={prevPhoto}
           onNext={nextPhoto}
           onDelete={deletePhoto}
+          onUpdateCaption={updateCaption}
         />
       )}
     </>
