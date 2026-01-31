@@ -13,6 +13,7 @@ interface Photo {
   name: string;
   caption: string;
   favorite: boolean;
+  albumId?: string;
 }
 
 interface PhotoGalleryProps {
@@ -129,6 +130,12 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
     await deletePhoto(photoName);
   }, [deletePhoto]);
 
+  const updateAlbum = useCallback((photoName: string, albumId: string | null) => {
+    setPhotos((prev) =>
+      prev.map((p) => (p.name === photoName ? { ...p, albumId: albumId || undefined } : p))
+    );
+  }, []);
+
   const displayedPhotos = showFavoritesOnly ? photos.filter((p) => p.favorite) : photos;
   const favoriteCount = photos.filter((p) => p.favorite).length;
 
@@ -156,6 +163,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           const url = await getDownloadURL(item);
           let caption = '';
           let favorite = false;
+          let albumId: string | undefined;
 
           // Fetch metadata from Firestore if available
           if (db) {
@@ -166,13 +174,14 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
                 const data = docSnap.data();
                 caption = data.caption || '';
                 favorite = data.favorite || false;
+                albumId = data.albumId || undefined;
               }
             } catch (err) {
               console.error('Error fetching photo metadata:', err);
             }
           }
 
-          return { url, name: item.name, caption, favorite };
+          return { url, name: item.name, caption, favorite, albumId };
         });
 
         const fetchedPhotos = await Promise.all(photoPromises);
@@ -331,6 +340,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           onDelete={deletePhoto}
           onUpdateCaption={updateCaption}
           onToggleFavorite={toggleFavorite}
+          onUpdateAlbum={updateAlbum}
         />
       )}
     </>

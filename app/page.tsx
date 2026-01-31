@@ -3,6 +3,7 @@
 import { useAuth } from '@/components/AuthProvider';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { PhotoGallery } from '@/components/PhotoGallery';
+import { AlbumList } from '@/components/AlbumList';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -50,7 +51,12 @@ export default function Home() {
         <PhotoUpload onUploadComplete={handleUploadComplete} />
       </div>
 
+      <div className="mt-8 mb-12">
+        <AlbumList />
+      </div>
+
       <div className="mt-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">All Photos</h2>
         <PhotoGallery refreshKey={refreshKey} />
       </div>
     </div>

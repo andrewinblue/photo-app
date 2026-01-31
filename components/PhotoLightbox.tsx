@@ -2,12 +2,14 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import Image from 'next/image';
+import { AlbumPicker } from './AlbumPicker';
 
 interface Photo {
   url: string;
   name: string;
   caption: string;
   favorite: boolean;
+  albumId?: string;
 }
 
 interface PhotoLightboxProps {
@@ -19,6 +21,8 @@ interface PhotoLightboxProps {
   onDelete?: (photoName: string) => Promise<void>;
   onUpdateCaption?: (photoName: string, caption: string) => Promise<void>;
   onToggleFavorite?: (photoName: string) => Promise<void>;
+  onUpdateAlbum?: (photoName: string, albumId: string | null) => void;
+  showAlbumPicker?: boolean;
 }
 
 export function PhotoLightbox({
@@ -30,12 +34,15 @@ export function PhotoLightbox({
   onDelete,
   onUpdateCaption,
   onToggleFavorite,
+  onUpdateAlbum,
+  showAlbumPicker: enableAlbumPicker = true,
 }: PhotoLightboxProps) {
   const photo = photos[currentIndex];
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionText, setCaptionText] = useState(photo?.caption || '');
   const [isSavingCaption, setIsSavingCaption] = useState(false);
+  const [showAlbumPicker, setShowAlbumPicker] = useState(false);
 
   const handleDownload = async () => {
     if (!photo) return;
@@ -285,6 +292,25 @@ export function PhotoLightbox({
           </button>
         )}
 
+        {/* Add to album button */}
+        {enableAlbumPicker && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowAlbumPicker(true);
+            }}
+            className={`p-2 rounded-full hover:bg-white/10 transition-colors ${
+              photo.albumId ? 'text-blue-400' : 'text-white/80 hover:text-blue-400'
+            }`}
+            aria-label="Add to album"
+            title={photo.albumId ? 'In album' : 'Add to album'}
+          >
+            <svg className="w-6 h-6" fill={photo.albumId ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </button>
+        )}
+
         {/* Download button */}
         <button
           onClick={(e) => {
@@ -330,6 +356,20 @@ export function PhotoLightbox({
           </button>
         )}
       </div>
+
+      {/* Album Picker */}
+      {showAlbumPicker && (
+        <AlbumPicker
+          photoName={photo.name}
+          currentAlbumId={photo.albumId}
+          onClose={() => setShowAlbumPicker(false)}
+          onUpdate={(albumId) => {
+            if (onUpdateAlbum) {
+              onUpdateAlbum(photo.name, albumId);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
