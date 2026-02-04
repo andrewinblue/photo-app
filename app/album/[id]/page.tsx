@@ -179,6 +179,20 @@ export default function AlbumPage() {
     }
   };
 
+  const setAsCover = async (photoUrl: string) => {
+    if (!db || !album) return;
+
+    try {
+      await updateDoc(doc(db, 'albums', album.id), {
+        coverPhotoUrl: photoUrl,
+        updatedAt: Date.now(),
+      });
+      setAlbum({ ...album, coverPhotoUrl: photoUrl });
+    } catch (err) {
+      console.error('Error setting cover photo:', err);
+    }
+  };
+
   const openLightbox = (index: number) => setLightboxIndex(index);
   const closeLightbox = () => setLightboxIndex(null);
   const prevPhoto = () => setLightboxIndex((i) => (i !== null && i > 0 ? i - 1 : i));
@@ -297,8 +311,14 @@ export default function AlbumPage() {
                   sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
                   onClick={() => openLightbox(index)}
                 />
+                {/* Cover indicator */}
+                {album?.coverPhotoUrl === photo.url && (
+                  <div className="absolute top-2 left-2 px-2 py-0.5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                    Cover
+                  </div>
+                )}
                 {/* Favorite indicator */}
-                {photo.favorite && (
+                {photo.favorite && album?.coverPhotoUrl !== photo.url && (
                   <div className="absolute top-2 left-2 p-1 text-red-500">
                     <svg className="w-5 h-5 drop-shadow-md" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -307,6 +327,22 @@ export default function AlbumPage() {
                 )}
                 {/* Action buttons */}
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Set as cover button */}
+                  {album?.coverPhotoUrl !== photo.url && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setAsCover(photo.url);
+                      }}
+                      className="p-1.5 bg-black/50 hover:bg-blue-600 text-white rounded-full"
+                      aria-label="Set as cover"
+                      title="Set as album cover"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
