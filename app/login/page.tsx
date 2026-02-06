@@ -30,19 +30,19 @@ export default function LoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Sign in to Photo App
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Use your Google account to get started
             </p>
           </div>
 
           <SignInButton />
 
-          <p className="mt-6 text-center text-sm text-gray-500">
+          <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
             By signing in, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>

@@ -127,37 +127,37 @@ export function AlbumPicker({ photoName, currentAlbumId, onClose, onUpdate }: Al
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[80vh] overflow-hidden"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-sm w-full max-h-[80vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Add to Album</h3>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Add to Album</h3>
         </div>
 
         <div className="overflow-y-auto max-h-[60vh]">
           {loading ? (
-            <div className="p-4 text-center text-gray-500">Loading albums...</div>
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400">Loading albums...</div>
           ) : albums.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
               No albums yet. Create one from the main page.
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {albums.map((album) => (
                 <button
                   key={album.id}
                   onClick={() => addToAlbum(album.id)}
                   disabled={saving || album.id === currentAlbumId}
-                  className={`w-full p-4 text-left hover:bg-gray-50 transition-colors flex items-center justify-between ${
-                    album.id === currentAlbumId ? 'bg-blue-50' : ''
+                  className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${
+                    album.id === currentAlbumId ? 'bg-blue-50 dark:bg-blue-900/30' : ''
                   } disabled:opacity-50`}
                 >
                   <div>
-                    <p className="font-medium text-gray-900">{album.name}</p>
-                    <p className="text-sm text-gray-500">{album.photoCount} photos</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{album.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{album.photoCount} photos</p>
                   </div>
                   {album.id === currentAlbumId && (
-                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                     </svg>
                   )}
@@ -167,19 +167,19 @@ export function AlbumPicker({ photoName, currentAlbumId, onClose, onUpdate }: Al
           )}
         </div>
 
-        <div className="p-4 border-t flex justify-between">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-between">
           {currentAlbumId && (
             <button
               onClick={removeFromAlbum}
               disabled={saving}
-              className="px-4 py-2 text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+              className="px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 disabled:opacity-50"
             >
               Remove from album
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 ml-auto"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 ml-auto"
           >
             Cancel
           </button>

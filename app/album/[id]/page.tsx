@@ -222,14 +222,14 @@ export default function AlbumPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button and album header */}
         <div className="mb-6">
           <Link
             href="/"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
+            className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
           >
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -243,7 +243,7 @@ export default function AlbumPage() {
                 type="text"
                 value={albumName}
                 onChange={(e) => setAlbumName(e.target.value)}
-                className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                className="text-2xl font-bold text-gray-900 dark:text-white bg-transparent border-b-2 border-blue-500 focus:outline-none"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') updateAlbumName();
@@ -265,10 +265,10 @@ export default function AlbumPage() {
           ) : (
             <h1
               onClick={() => setIsEditingName(true)}
-              className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-gray-700"
+              className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
             >
               {album?.name}
-              <span className="ml-2 text-sm font-normal text-gray-500">
+              <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                 ({photos.length} photos)
               </span>
             </h1>
@@ -291,8 +291,8 @@ export default function AlbumPage() {
                 d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No photos in this album</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No photos in this album</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Add photos from your gallery using the &quot;Add to album&quot; button.
             </p>
           </div>
@@ -301,7 +301,7 @@ export default function AlbumPage() {
             {photos.map((photo, index) => (
               <div
                 key={photo.name}
-                className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 group"
+                className="aspect-square relative rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 group"
               >
                 <Image
                   src={photo.url}
