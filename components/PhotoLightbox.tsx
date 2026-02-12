@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import Image from 'next/image';
 import { AlbumPicker } from './AlbumPicker';
+import { ShareModal } from './ShareModal';
 
 interface Photo {
   url: string;
@@ -10,6 +11,7 @@ interface Photo {
   caption: string;
   favorite: boolean;
   albumId?: string;
+  shareId?: string;
 }
 
 interface PhotoLightboxProps {
@@ -22,6 +24,7 @@ interface PhotoLightboxProps {
   onUpdateCaption?: (photoName: string, caption: string) => Promise<void>;
   onToggleFavorite?: (photoName: string) => Promise<void>;
   onUpdateAlbum?: (photoName: string, albumId: string | null) => void;
+  onUpdateShare?: (photoName: string, shareId: string | null) => void;
   showAlbumPicker?: boolean;
 }
 
@@ -35,6 +38,7 @@ export function PhotoLightbox({
   onUpdateCaption,
   onToggleFavorite,
   onUpdateAlbum,
+  onUpdateShare,
   showAlbumPicker: enableAlbumPicker = true,
 }: PhotoLightboxProps) {
   const photo = photos[currentIndex];
@@ -43,6 +47,7 @@ export function PhotoLightbox({
   const [captionText, setCaptionText] = useState(photo?.caption || '');
   const [isSavingCaption, setIsSavingCaption] = useState(false);
   const [showAlbumPicker, setShowAlbumPicker] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const handleDownload = async () => {
     if (!photo) return;
@@ -326,6 +331,25 @@ export function PhotoLightbox({
           </svg>
         </button>
 
+        {/* Share button */}
+        {onUpdateShare && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowShareModal(true);
+            }}
+            className={`p-2 rounded-full hover:bg-white/10 transition-colors ${
+              photo.shareId ? 'text-green-400' : 'text-white/80 hover:text-green-400'
+            }`}
+            aria-label="Share photo"
+            title={photo.shareId ? 'Shared' : 'Share'}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </button>
+        )}
+
         {/* Counter */}
         <span className="text-white/80 text-sm">
           {currentIndex + 1} / {photos.length}
@@ -366,6 +390,21 @@ export function PhotoLightbox({
           onUpdate={(albumId) => {
             if (onUpdateAlbum) {
               onUpdateAlbum(photo.name, albumId);
+            }
+          }}
+        />
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <ShareModal
+          photoName={photo.name}
+          photoUrl={photo.url}
+          currentShareId={photo.shareId}
+          onClose={() => setShowShareModal(false)}
+          onUpdate={(shareId) => {
+            if (onUpdateShare) {
+              onUpdateShare(photo.name, shareId);
             }
           }}
         />

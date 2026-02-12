@@ -14,6 +14,7 @@ interface Photo {
   caption: string;
   favorite: boolean;
   albumId?: string;
+  shareId?: string;
 }
 
 interface PhotoGalleryProps {
@@ -136,6 +137,12 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
     );
   }, []);
 
+  const updateShare = useCallback((photoName: string, shareId: string | null) => {
+    setPhotos((prev) =>
+      prev.map((p) => (p.name === photoName ? { ...p, shareId: shareId || undefined } : p))
+    );
+  }, []);
+
   const displayedPhotos = showFavoritesOnly ? photos.filter((p) => p.favorite) : photos;
   const favoriteCount = photos.filter((p) => p.favorite).length;
 
@@ -164,6 +171,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           let caption = '';
           let favorite = false;
           let albumId: string | undefined;
+          let shareId: string | undefined;
 
           // Fetch metadata from Firestore if available
           if (db) {
@@ -175,13 +183,14 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
                 caption = data.caption || '';
                 favorite = data.favorite || false;
                 albumId = data.albumId || undefined;
+                shareId = data.shareId || undefined;
               }
             } catch (err) {
               console.error('Error fetching photo metadata:', err);
             }
           }
 
-          return { url, name: item.name, caption, favorite, albumId };
+          return { url, name: item.name, caption, favorite, albumId, shareId };
         });
 
         const fetchedPhotos = await Promise.all(photoPromises);
@@ -341,6 +350,7 @@ export function PhotoGallery({ refreshKey }: PhotoGalleryProps) {
           onUpdateCaption={updateCaption}
           onToggleFavorite={toggleFavorite}
           onUpdateAlbum={updateAlbum}
+          onUpdateShare={updateShare}
         />
       )}
     </>

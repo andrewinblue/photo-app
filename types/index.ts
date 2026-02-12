@@ -14,4 +14,5 @@ export interface Photo {
   caption: string;
   favorite: boolean;
   albumId?: string;
+  shareId?: string;
 }
